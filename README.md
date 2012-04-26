@@ -9,6 +9,7 @@ that are sent to the console.
 This tool has been tested and used with Adobe ColdFusion 9. I have *not* tested this
 with any previous version of Adobe ColdFusion, OpenBD, or Railo CFML.
 
+CFLogParser is written in Groovy, and uses Ant to build the executable JAR. 
 For more information see the JavaDocs or the CFLogParser.pdf file.
 
 
