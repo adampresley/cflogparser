@@ -1,0 +1,100 @@
+<?xml version="1.0"?>
+<project name="cflogparser" basedir="." default="dist">
+	<!--
+		Task Imports
+	-->
+	<taskdef name="groovyc" classname="org.codehaus.groovy.ant.Groovyc" classpath="lib/groovy-all-1.7.5.jar" />
+	<taskdef name="groovydoc" classname="org.codehaus.groovy.ant.Groovydoc" classpath="lib/groovy-all-1.7.5.jar" />
+	
+	<!--
+		Increment the build number from the properties file. Then
+		import the version variables.
+	-->
+	<propertyfile file="build.properties">
+		<entry key="majorVer" type="int" default="0" pattern="0" />
+		<entry key="minorVer" type="int" default="0" pattern="00" />
+		<entry key="buildVer" type="int" default="0" operation="+" pattern="0000" />
+	</propertyfile>
+	
+	<property file="build.properties" />
+	
+	<!--
+		Setup build variables that tell where our source, build location,
+		JAR file name, and dependencies live.
+	-->
+	<property name="src.path" value="src" />
+	<property name="build.path" value="build" />
+	<property name="lib.path" value="lib" />
+	<property name="dist.path" value="dist" />
+	<property name="doc.path" value="doc" />
+	
+	<path id="project.classpath">
+		<fileset dir="${lib.path}" includes="**/*.jar" />
+	</path>
+
+	<property name="jar.file" value="${dist.path}/${ant.project.name}.jar" />
+	<property name="jar.author" value="Adam Presley" />
+	<property name="jar.mainClass" value="com.adampresley.cflogparser.Main" />
+	<property name="log4j.path" value="com/adampresley/cflogparser" />
+	
+	<property name="doc.codenarc.title" value="${ant.project.name} CodeNarc - build ${majorVer}.${minorVer}.${buildVer}" />
+	<property name="doc.codenarc.file" value="${doc.path}/codeNarcReport.html" />
+	<property name="doc.groovydoc.title" value="${ant.project.name} Documentation" />
+	
+	<!--
+		Targets
+	-->
+	<target name="init" description="Prepare the build environment">
+		<tstamp />
+
+		<delete includeemptydirs="true">
+			<fileset dir="${build.path}" includes="**/*" />
+		</delete>
+		<delete includeemptydirs="false">
+			<fileset dir="${dist.path}" includes="**/*" />
+		</delete>
+	</target>
+
+	<target name="compile" depends="init" description="Compile the source code.">
+		<groovyc srcdir="${src.path}" destdir="${build.path}" classpathref="project.classpath" includeJavaRuntime="true" />
+		<copy file="${src.path}/${log4j.path}/log4j.properties" tofile="${build.path}/${log4j.path}/log4j.properties" />
+		<copy file="${src.path}/com/adampresley/cflogparser/reports/summaryReport.jrxml" tofile="${build.path}/com/adampresley/cflogparser/reports/summaryReport.jrxml" />
+		<copy file="${src.path}/com/adampresley/cflogparser/reports/lineItemReport.jrxml" tofile="${build.path}/com/adampresley/cflogparser/reports/lineItemReport.jrxml" />
+	</target>
+
+	<target name="build-docs" depends="compile" description="Builds documentation using GroovyDoc.">
+		<groovydoc access="private" 
+			author="true" 
+			destdir="${doc.path}" 
+			doctitle="${doc.groovydoc.title}" 
+			packagenames="**.*" 
+			sourcepath="${src.path}" 
+			use="true"
+			windowtitle="${doc.groovydoc.title}"
+			header="${doc.groovydoc.title}"
+			private="true"
+		/>
+	</target>
+
+	<target name="dist" depends="build-docs" description="Distribute the application in JAR files.">
+		<pathconvert property="mf.classpath" pathsep=" ">
+			<path refid="project.classpath" />
+			<flattenmapper />
+		</pathconvert>
+		
+		<jar jarfile="${jar.file}" basedir="${build.path}">
+			<manifest>
+				<attribute name="Created-By" value="${jar.author}" />
+				<attribute name="Class-Path" value="${mf.classpath}" />
+				<attribute name="Main-Class" value="${jar.mainClass}" />
+			</manifest>
+		</jar>
+		
+		<!-- Copy depenent files -->
+		<copy todir="${dist.path}">
+			<fileset dir="${lib.path}" includes="**/*.jar" />
+		</copy>
+	</target>
+	
+</project>
+
