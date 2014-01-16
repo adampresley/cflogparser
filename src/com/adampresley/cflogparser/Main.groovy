@@ -17,22 +17,22 @@ import net.sf.jasperreports.engine.*
  * misbehaving.
  * @author Adam Presley
  */
-class Main 
+class Main
 {
 	static main(args) {
 		Bootstrap.loadMetaClassEnhancements()
-		
+
 		def docArgSize = 25
 		def docDescSize = 50
-		
+
 		def index = 0
 		def splitUp = []
 		def arg
 		def value
-		
+
 		def validLogTypes = [ "error", "info", "warn", "fatal", "debug" ]
 		def config = Parser.getNewConfig()
-		
+
 		/*
 		 * If enough arguments aren't passed in display usage information.
 		 */
@@ -57,15 +57,15 @@ class Main
 			print "\n   --max-threads".padRight(docArgSize, " ")
 			"Maximum number of threads used to process log files. Be careful as setting this too high can cause system instability. Defaults to 20.".wrap(docDescSize, docArgSize, false).each { println it }
 			print "\n   --output-file".padRight(docArgSize, " ")
-			"Name of the file that contains the log parsing results. This is applicable for the excel,text,pdf,summarypdf formats.".wrap(docDescSize, docArgSize, false).each { println it } 
+			"Name of the file that contains the log parsing results. This is applicable for the excel,text,pdf,summarypdf formats.".wrap(docDescSize, docArgSize, false).each { println it }
 			print "\n   --output-format".padRight(docArgSize, " ")
-			"Format to export results to. Formats include excel,console,text,pdf,summarypdf. The default is excel.".wrap(docDescSize, docArgSize, false).each { println it }
+			"Format to export results to. Formats include excel,console,text,csv,pdf,summarypdf. The default is excel.".wrap(docDescSize, docArgSize, false).each { println it }
 			print "\n   --regex-basePath".padRight(docArgSize, " ")
 			"A comma-delimited list of paths to perform the regex search for files in. Required when used with --regex-search.".wrap(docDescSize, docArgSize, false).each { println it }
 			print "\n   --regex-search".padRight(docArgSize, " ")
-			"A regular expression to match file names against. Required when using --regex-basePath.".wrap(docDescSize, docArgSize, false).each { println it } 
+			"A regular expression to match file names against. Required when using --regex-basePath.".wrap(docDescSize, docArgSize, false).each { println it }
 			print "\n   --sortdt".padRight(docArgSize, " ")
-			"Sorts the output by date/time in either descending or ascending order. Valid values are desc and asc. Does not sort by default.".wrap(docDescSize, docArgSize, false).each { println it } 
+			"Sorts the output by date/time in either descending or ascending order. Valid values are desc and asc. Does not sort by default.".wrap(docDescSize, docArgSize, false).each { println it }
 			print "\n   --tail".padRight(docArgSize, " ")
 			"Returns the last N log entries ordered by date/time descending.".wrap(docDescSize, docArgSize, false).each { println it }
 			println ""
@@ -76,18 +76,18 @@ class Main
 			println "      java -jar cflogparser.jar --output-file=results.xlsx --file-list=C:\\serverfile1-out.log,C:\\serverfile2-out.log"
 			println ""
 			println "   To parse errors from all files with a patter:"
-			println "      java -jar cflogparser.jar --output-file=results.xlsx --regex-basePath=C:\\ --regex-search=web[0-9]{2,4}-cf[0-9]{2,4}-out\\.log" 
+			println "      java -jar cflogparser.jar --output-file=results.xlsx --regex-basePath=C:\\ --regex-search=web[0-9]{2,4}-cf[0-9]{2,4}-out\\.log"
 			println ""
-			
+
 			return
 		}
-		
-		
+
+
 		/*
 		 * Initialize log4j
 		 */
 		Logger logger = Logger.getLogger("mainLogger")
-		
+
 		URL log4jProperties = Loader.getResource("com/adampresley/cflogparser/log4j.properties")
 		PropertyConfigurator.configure(log4jProperties)
 
@@ -97,7 +97,7 @@ class Main
 		 */
 		def argManager = new ArgManager()
 		def newArg = null
-		
+
 		/*
 		 * Craft an array of all the incoming arguments. Sort them
 		 * by order, then execute the process method for each argument
@@ -113,7 +113,7 @@ class Main
 				arg = args[index]
 				value = ""
 			}
-			
+
 			newArg = argManager.getArgClass(arg, value)
 			if (newArg != null) {
 				argManager.args << argManager.getArgClass(arg, value)
@@ -126,9 +126,9 @@ class Main
 				return
 			}
 		}
-		
+
 		argManager.process(config)
-		
+
 
 		/*
 		 * Validate our argument combinations. Some args are required based
@@ -138,15 +138,15 @@ class Main
 			if (config.outputFormat != "console" && config.outputFilename.size() < 1) {
 				throw new Exception("The argument --output-file is required")
 			}
-			
+
 			if (config.argFlags.regexSearchProvided && !config.argFlags.regexBaseProvided) {
 				throw new Exception("The argument --regex-basePath is required when --regex-search is provided.")
 			}
-			
+
 			if (!config.argFlags.fileListRetrieved && !config.argFlags.regexBaseProvided) {
 				throw new Exception("Please provide either a file list (--file-list), or a regex path and search criteria (--regex-basePath, --regex-search)")
 			}
-			
+
 			config.logTypes.each { logType ->
 				if (logType != validLogTypes.find { it == logType }) {
 					throw new Exception("${logType} is an invalid log type")
@@ -161,21 +161,21 @@ class Main
 		if (config.debugArgsMode) {
 			logger.info "Base paths:"
 			config.basePaths.each { logger.info it }
-			
+
 			logger.info "The following is the files found for processing:"
 			config.fileList.each { logger.info it }
-			
+
 			logger.info "Exiting debug mode."
 			return
 		}
-		
-		
+
+
 		/*
 		 * It's PARSING time!
 		 */
 		def p = new Parser(config)
 		def info = p.parse()
-		
+
 		/*
 		 * Write the output. This will depend on the output format.
 		 */
@@ -184,7 +184,7 @@ class Main
 			logger.error "No writer matched the output format of ${config.outputFormat}"
 			return
 		}
-		
+
 		writer.write(info)
 		logger.info "Done."
 	}
